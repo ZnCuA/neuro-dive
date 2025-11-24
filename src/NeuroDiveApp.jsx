@@ -410,7 +410,7 @@ export default function NeuroDiveApp() {
         <div className="fixed inset-0 bg-red-900/20 z-0 animate-pulse"></div>
       )}
 
-      <div className="relative z-10 flex flex-col h-screen max-w-3xl mx-auto p-4 md:p-8 crt-flicker">
+    <div className="relative z-10 flex flex-col min-h-screen md:h-screen max-w-3xl mx-auto p-4 md:p-8 crt-flicker">
         
         <header className="flex justify-between items-center border-b border-green-800 pb-4 mb-4">
           <div className="flex items-center gap-2">

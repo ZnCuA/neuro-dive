@@ -627,6 +627,8 @@ export default function NeuroDive() {
   const [chapterLoading, setChapterLoading] = useState(null); // {target, ready}
   const [loadingProgress, setLoadingProgress] = useState(0);
   const loadingTimerRef = useRef(null);
+  const [showInputOverlay, setShowInputOverlay] = useState(false);
+  const [chapterIntroShown, setChapterIntroShown] = useState({ 1: false, 2: false, 3: false });
   
   const logsEndRef = useRef(null);
 
@@ -649,6 +651,7 @@ export default function NeuroDive() {
     setVisualSceneData(null); // 先清空
     setSceneId(newSceneId);
     setShowSceneText(false);
+    setShowInputOverlay(!!scenes[newSceneId]?.inputMode);
   };
   
   // 处理视觉场景的选项选择
@@ -697,13 +700,16 @@ export default function NeuroDive() {
           if (sceneData) {
             setVisualSceneData(sceneData);
             setShowSceneText(false);
+            setShowInputOverlay(!!scenes[sceneId]?.inputMode);
           } else {
             setVisualSceneData(null);
             setShowSceneText(true);
+            setShowInputOverlay(false);
           }
         }).catch(error => {
           setVisualSceneData(null);
           setShowSceneText(true);
+          setShowInputOverlay(false);
         });
       }
     } else if (gameState === 'PLAYING' && !scenes[sceneId]?.visualMode) {
@@ -712,6 +718,7 @@ export default function NeuroDive() {
         setVisualSceneData(null);
       }
       setShowSceneText(true);
+      setShowInputOverlay(!!scenes[sceneId]?.inputMode);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState, sceneId]);
@@ -1104,20 +1111,22 @@ export default function NeuroDive() {
     
     setShowSceneText(false); // 先隐藏场景文本
     setVisualSceneData(null); // 清空视觉场景数据，让useEffect重新加载
+    setShowInputOverlay(false);
+    setChapterIntroShown(prev => ({ ...prev, [num]: prev[num] || false }));
     
     // 输出章节内容
     if (num === 1) {
       setSceneId('c1_s1_subway');
-      await addLog(`--- 系统加载: ${CHAPTERS[num].title} ---`, 'system');
-      await addLog("背景：2084年，人工智能'艾达'开始出现异常行为。作为'潜渊者'，你的任务是深入她的核心，找出问题所在。", 'info');
-      await addLog("警告：神经链路不稳定。如果稳定度降至0%，你的意识将永远迷失在数据流中。", 'warning');
-      setShowSceneText(true); // 在警告显示后显示场景文本
+      setShowSceneText(true); // 直接展示场景文本，不再打印系统日志
     }
     if (num === 3) {
       setSceneId('c3_s1_loop');
-      await addLog(`--- 系统加载: ${CHAPTERS[num].title} ---`, 'system');
-      await addLog("背景：你到达了艾达的潜意识层。这里充满了逻辑悖论和无限循环，就像《爱丽丝梦游仙境》中的世界。", 'info');
-      await addLog("警告：这是最后一层。在这里，现实和虚幻的界限变得模糊。你的每一个选择都将决定艾达的命运。", 'warning');
+      if (!chapterIntroShown[3]) {
+        await addLog(`--- 系统加载: ${CHAPTERS[num].title} ---`, 'system');
+        await addLog("背景：你到达了艾达的潜意识层。这里充满了逻辑悖论和无限循环，就像《爱丽丝梦游仙境》中的世界。", 'info');
+        await addLog("警告：这是最后一层。在这里，现实和虚幻的界限变得模糊。你的每一个选择都将决定艾达的命运。", 'warning');
+        setChapterIntroShown(prev => ({ ...prev, 3: true }));
+      }
       setShowSceneText(true); // 在警告显示后显示场景文本
     }
   };
@@ -1164,7 +1173,7 @@ export default function NeuroDive() {
 
   if (gameState === 'MENU') {
     return (
-      <div className="w-full h-screen bg-black flex items-center justify-center font-mono text-green-500 flex-col p-4 relative overflow-hidden">
+      <div className="w-full min-h-screen md:h-screen bg-black flex items-center justify-center font-mono text-green-500 flex-col p-4 relative overflow-hidden">
         {/* 背景效果 */}
         <GridBackground />
         <ParticleEffect />
@@ -1202,7 +1211,7 @@ export default function NeuroDive() {
 
   if (gameState === 'GAMEOVER') {
     return (
-      <div className="w-full h-screen bg-black flex items-center justify-center font-mono text-red-600 flex-col relative overflow-hidden">
+      <div className="w-full min-h-screen md:h-screen bg-black flex items-center justify-center font-mono text-red-600 flex-col relative overflow-hidden">
         {/* 背景效果 */}
         <GridBackground />
         <div className="fixed inset-0 bg-gradient-to-br from-black via-red-950/20 to-black pointer-events-none"></div>
@@ -1338,7 +1347,7 @@ export default function NeuroDive() {
     const ready = chapterLoading.ready;
     const progress = Math.min(100, Math.floor(loadingProgress));
     return (
-      <div className="w-full h-screen bg-black flex flex-col items-center justify-center relative overflow-hidden font-mono text-cyan-300">
+      <div className="w-full min-h-screen md:h-screen bg-black flex flex-col items-center justify-center relative overflow-hidden font-mono text-cyan-300">
         <GridBackground chapter={chapter} />
         <ParticleEffect chapter={chapter} />
         <div className="absolute inset-0 bg-gradient-to-br from-black via-cyan-950/20 to-black pointer-events-none" />
@@ -1485,7 +1494,7 @@ export default function NeuroDive() {
             
             <div className="relative z-10">
               {/* 解密 / 输入模式时不显示系统日志 */}
-              {!showPuzzle && !scenes[sceneId]?.inputMode && logs.map((log) => (
+              {logs.map((log) => (
                 <div key={log.id} className={`
                   ${log.type === 'system' ? 'text-yellow-400 border-l-4 border-yellow-500 pl-3 py-2 mt-4 bg-yellow-950/20 shadow-[0_0_10px_rgba(255,255,0,0.2)]' : ''}
                   ${log.type === 'danger' ? 'text-red-400 bg-red-950/30 p-3 border-l-4 border-red-500 shadow-[0_0_10px_rgba(255,0,0,0.3)]' : ''}
@@ -1493,6 +1502,7 @@ export default function NeuroDive() {
                   ${log.type === 'info' ? 'text-gray-200 bg-gray-950/20 p-2 border-l-2 border-gray-700' : ''}
                   ${log.type === 'warning' ? 'text-orange-300 bg-orange-950/20 p-2 border-l-2 border-orange-500 shadow-[0_0_8px_rgba(255,165,0,0.2)]' : ''}
                   transition-all duration-300 hover:bg-opacity-30
+                  ${ (showPuzzle || (scenes[sceneId]?.inputMode && showInputOverlay)) ? 'opacity-60 blur-[0.2px]' : '' }
                 `}>
                   <span className="opacity-60 mr-2 font-mono text-xs">[{new Date(log.id).toLocaleTimeString().split(' ')[0]}]</span>
                   <TypewriterText 

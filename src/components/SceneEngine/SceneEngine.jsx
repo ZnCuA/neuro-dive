@@ -61,14 +61,14 @@ export default function SceneEngine({ sceneData, onChoiceSelect, stability, chap
   
   if (!currentScene) {
     return (
-      <div className="w-full h-screen bg-black flex items-center justify-center text-cyan-400">
+      <div className="w-full min-h-screen bg-black flex items-center justify-center text-cyan-400 p-6">
         <div className="animate-pulse">加载场景中...</div>
       </div>
     );
   }
   
   return (
-    <div className="scene-engine w-full h-screen relative overflow-hidden bg-black">
+    <div className="scene-engine w-full min-h-screen md:h-screen relative overflow-hidden bg-black">
       {/* 过渡遮罩 */}
       {isTransitioning && (
         <div className="absolute inset-0 bg-black z-50 transition-opacity duration-500" />

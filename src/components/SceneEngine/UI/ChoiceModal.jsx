@@ -22,7 +22,7 @@ export default function ChoiceModal({ choices = [], title, onSelect, onClose }) 
       />
       
       {/* 弹窗内容 */}
-      <div className="relative z-10 w-full max-w-2xl">
+      <div className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="bg-black/95 border-2 border-cyan-500 rounded-lg shadow-[0_0_40px_rgba(0,255,255,0.6)] overflow-hidden">
           {/* 弹窗标题栏 */}
           <div className="px-6 py-4 border-b-2 border-cyan-500 bg-cyan-950/30 flex items-center justify-between">
