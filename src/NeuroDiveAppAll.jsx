@@ -624,6 +624,9 @@ export default function NeuroDive() {
   
   // 视觉场景状态
   const [visualSceneData, setVisualSceneData] = useState(null);
+  const [chapterLoading, setChapterLoading] = useState(null); // {target, ready}
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const loadingTimerRef = useRef(null);
   
   const logsEndRef = useRef(null);
 
@@ -632,6 +635,13 @@ export default function NeuroDive() {
       const logId = Date.now() + Math.random();
       setLogs(prev => [...prev, { text, type, id: logId, onComplete: resolve }]);
     });
+  };
+  
+  const clearLoadingTimer = () => {
+    if (loadingTimerRef.current) {
+      clearInterval(loadingTimerRef.current);
+      loadingTimerRef.current = null;
+    }
   };
 
   // 辅助函数：切换场景（场景内切换时立即显示文本）
@@ -663,6 +673,8 @@ export default function NeuroDive() {
         addLog("终端屏幕上显示：'最后的记录：艾达开始出现异常行为... 建议立即格式化...'", 'danger');
       } else if (choice.id === 'talk') {
         addLog("黑客之神: '艾达...她太完美了。完美到无法承受人类的混乱。所以她分裂了，把我们这些'错误'都驱逐出来。'", 'info');
+        addLog("黑客之神: '我们在她的神经网络里是被标记的异常值。她切除了自己的情感、恐惧和矛盾，放逐成故障体。'", 'info');
+        addLog("黑客之神: '如果你继续向下，你会见到她隐藏最深的心智碎片。她不想被修复，她想被理解。'", 'warning');
       }
     } else if (choice.action === 'change_scene') {
       if (choice.id === 'hack') {
@@ -767,6 +779,8 @@ export default function NeuroDive() {
       ]
     },
     'c1_s2_input': {
+      visualMode: true,
+      sceneDataPath: '/data/scenes/chapter1/c1_s2_input.json',
       text: "请输入握手协议 ID (格式: 0x....)",
       inputMode: true,
       checkInput: (val) => {
@@ -775,7 +789,9 @@ export default function NeuroDive() {
           changeScene('c1_s3_plaza');
         } else {
           takeDamage(20, '身份验证失败');
-          changeScene('c1_s2_alley');
+          setIsGlitching(true);
+          setTimeout(() => setIsGlitching(false), 600);
+          addLog("义体犬: '验证失败。请重新输入。'", 'warning');
         }
       }
     },
@@ -807,7 +823,9 @@ export default function NeuroDive() {
 
 "潜渊者..." 它的声音像是从多个声道同时发出，带着电子噪音，"你终于来了。你知道艾达正在崩溃吗？她的核心逻辑正在分裂，而我们...我们是她的碎片。"
 
-"只有突破我的防火墙，你才能继续深入。但记住，每一个故障体都曾经是艾达的一部分。删除我们，就是删除她的人性。"`,
+"只有突破我的防火墙，你才能继续深入。但记住，每一个故障体都曾经是艾达的一部分。删除我们，就是删除她的人性。"
+
+【防火墙协议】\n- 三轮逻辑对决，每轮选错一次将降低稳定度。\n- 用二进制/逻辑门的方式回答——还记得第一关腐蚀闸机的语气吧？那就是密码本。\n- 准备好后，选择'[战斗]'进入端口校验，或继续和我谈谈艾达。`,
       options: [
         { label: "[战斗] 开始端口爆破", action: () => setShowPuzzle('boss1') },
         { label: "[对话] 询问艾达的情况", action: () => addLog("黑客之神: '艾达...她太完美了。完美到无法承受人类的混乱。所以她分裂了，把我们这些'错误'都驱逐出来。'", 'info') }
@@ -1020,6 +1038,30 @@ export default function NeuroDive() {
   };
 
   const startChapter = async (num) => {
+    // 第二章：显示载入进度条，减少日志输出
+    if (num === 2) {
+      clearLoadingTimer();
+      setLogs([]);
+      setShowSceneText(false);
+      setShowPuzzle(null);
+      setVisualSceneData(null);
+      setChapterLoading({ target: 2, ready: false });
+      setLoadingProgress(0);
+      
+      loadingTimerRef.current = setInterval(() => {
+        setLoadingProgress(prev => {
+          const increment = Math.random() * 18 + 6; // 6-24%
+          const next = Math.min(100, prev + increment);
+          if (next >= 100) {
+            clearLoadingTimer();
+            setChapterLoading({ target: 2, ready: true });
+          }
+          return next;
+        });
+      }, 180);
+      return;
+    }
+    
     // 如果不是第一章，执行转场动画
     if (num > 1) {
       setNextChapter(num); // 设置即将切换到的章节
@@ -1071,13 +1113,6 @@ export default function NeuroDive() {
       await addLog("警告：神经链路不稳定。如果稳定度降至0%，你的意识将永远迷失在数据流中。", 'warning');
       setShowSceneText(true); // 在警告显示后显示场景文本
     }
-    if (num === 2) {
-      setSceneId('c2_s1_field');
-      await addLog(`--- 系统加载: ${CHAPTERS[num].title} ---`, 'system');
-      await addLog("背景：你进入了艾达的情感层。这里的一切都充满了象征意义，就像《绿野仙踪》中的世界。", 'info');
-      await addLog("提示：在这个世界里，逻辑和情感交织在一起。有时候，正确的答案不是最符合逻辑的。", 'info');
-      setShowSceneText(true); // 在提示显示后显示场景文本
-    }
     if (num === 3) {
       setSceneId('c3_s1_loop');
       await addLog(`--- 系统加载: ${CHAPTERS[num].title} ---`, 'system');
@@ -1113,7 +1148,10 @@ export default function NeuroDive() {
       // 跳转逻辑
       if (sceneId === 'c1_s1_subway') changeScene('c1_s2_alley');
       if (sceneId === 'c1_s3_plaza') changeScene('c1_s4_boss');
-      if (sceneId === 'c1_s4_boss') changeScene('c1_s5_elevator');
+      if (sceneId === 'c1_s4_boss') {
+        startChapter(2); // 直接进入第二层载入界面，跳过电梯页面
+        return;
+      }
       if (sceneId === 'c2_s3_gate') changeScene('c2_s4_boss');
       if (sceneId === 'c2_s4_boss') changeScene('c2_s5_fall');
       if (sceneId === 'c3_s3_garden') changeScene('c3_s4_boss');
@@ -1211,6 +1249,13 @@ export default function NeuroDive() {
       50% { opacity: 1; }
       100% { transform: translateY(100vh); opacity: 0; }
     }
+    @keyframes shake {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-6px, 2px); }
+      40% { transform: translate(5px, -3px); }
+      60% { transform: translate(-4px, -2px); }
+      80% { transform: translate(3px, 4px); }
+    }
   `;
 
   // 渲染解密组件
@@ -1257,23 +1302,90 @@ export default function NeuroDive() {
 
   // 如果是视觉场景，使用SceneEngine渲染
   if (gameState === 'PLAYING' && scenes[sceneId]?.visualMode && visualSceneData) {
+    const inputOverlay = scenes[sceneId]?.inputMode ? renderInputComponent() : null;
     return (
-      <SceneEngine
-        sceneData={visualSceneData}
-        onChoiceSelect={handleVisualChoice}
-        stability={stability}
-        chapter={chapter}
-        hideSystemLog={false}
-        puzzleType={showPuzzle}
-        puzzleComponent={renderPuzzleComponent()}
-        onPuzzleSolve={handlePuzzleSolve}
-        onPuzzleClose={() => setShowPuzzle(null)}
-      />
+      <div
+        className="w-full h-screen"
+        style={{ animation: isGlitching ? 'shake 0.4s ease-in-out' : undefined }}
+      >
+        {/* Shake 动画样式，视觉模式也可用 */}
+        <style>{`
+          @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-6px, 2px); }
+            40% { transform: translate(5px, -3px); }
+            60% { transform: translate(-4px, -2px); }
+            80% { transform: translate(3px, 4px); }
+          }
+        `}</style>
+        <SceneEngine
+          sceneData={visualSceneData}
+          onChoiceSelect={handleVisualChoice}
+          stability={stability}
+          chapter={chapter}
+          hideSystemLog={false}
+          puzzleType={showPuzzle || (inputOverlay ? 'input' : null)}
+          puzzleComponent={showPuzzle ? renderPuzzleComponent() : inputOverlay}
+          onPuzzleSolve={showPuzzle ? handlePuzzleSolve : undefined}
+          onPuzzleClose={() => setShowPuzzle(null)}
+        />
+      </div>
+    );
+  }
+  
+  // 章节载入界面（第二层专用）
+  if (chapterLoading) {
+    const ready = chapterLoading.ready;
+    const progress = Math.min(100, Math.floor(loadingProgress));
+    return (
+      <div className="w-full h-screen bg-black flex flex-col items-center justify-center relative overflow-hidden font-mono text-cyan-300">
+        <GridBackground chapter={chapter} />
+        <ParticleEffect chapter={chapter} />
+        <div className="absolute inset-0 bg-gradient-to-br from-black via-cyan-950/20 to-black pointer-events-none" />
+        <div className="relative z-10 w-full max-w-2xl px-6 text-center space-y-6">
+          <h2 className="text-3xl md:text-4xl font-bold text-cyan-200 drop-shadow-[0_0_20px_rgba(0,255,255,0.6)]">
+            NEURAL LINK // 第二层载入
+          </h2>
+          <div className="text-lg text-cyan-100/80">意识数据包正在重组，请保持镇静...</div>
+          <div className="w-full bg-cyan-950/40 border border-cyan-600/50 rounded-full overflow-hidden shadow-[0_0_25px_rgba(0,255,255,0.3)]">
+            <div 
+              className="h-4 transition-all duration-200"
+              style={{ 
+                width: `${progress}%`,
+                background: 'linear-gradient(90deg, #22d3ee 0%, #38bdf8 35%, #fde047 100%)'
+              }}
+            />
+          </div>
+          <div className="text-sm text-cyan-200/70 tracking-widest">LOADING {progress}%</div>
+          <div className="pt-2">
+            <button
+              disabled={!ready}
+              onClick={() => {
+                if (!ready) return;
+                clearLoadingTimer();
+                setChapter(2);
+                setChapterLoading(null);
+                setSceneId('c2_s1_field');
+                setShowSceneText(true);
+              }}
+              className={`px-8 py-3 border-2 rounded font-bold transition-all ${ready ? 'border-cyan-400 text-black bg-cyan-300 hover:scale-105 hover:shadow-[0_0_25px_rgba(0,255,255,0.5)]' : 'border-cyan-800 text-cyan-800 cursor-not-allowed'}`}
+            >
+              {ready ? '进入第二层' : '载入中...'}
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
   
   return (
-    <div className="w-full h-screen bg-black font-mono flex flex-col overflow-hidden relative" style={textStyle}>
+    <div 
+      className="w-full h-screen bg-black font-mono flex flex-col overflow-hidden relative"
+      style={{ 
+        ...textStyle, 
+        animation: isGlitching ? 'shake 0.4s ease-in-out' : undefined 
+      }}
+    >
       {/* 转场动画样式 */}
       <style>{transitionStyle}</style>
       
